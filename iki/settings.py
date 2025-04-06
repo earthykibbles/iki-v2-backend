@@ -14,12 +14,18 @@ import os
 import sys
 from pathlib import Path
 from datetime import timedelta
+import logging
+from dotenv import load_dotenv
+
+load_dotenv()  # Load .env variables
 
 import firebase_admin
 from firebase_admin import credentials
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Firebase Initialization
 FIREBASE_CRED_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', os.path.join(BASE_DIR, 'credentials', 'iki-flutter-firebase-adminsdk-c43kn-69d8ada3fe.json'))
@@ -37,13 +43,21 @@ if not firebase_admin._apps:
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-7=x%z9p6co0_7yvpsonzc)y)here#b_69@+!zsv+c+lkdbno0g'
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY')
+FATSECRET_API_KEY = os.getenv('FATSECRET_API_KEY')
+FATSECRET_API_SECRET = os.getenv('FATSECRET_API_SECRET')
+FLUTTERWAVE_API_KEY = os.getenv('FLUTTERWAVE_API_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'  # Convert string to boolean
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
+# WebSockets ASGI
+ASGI_APPLICATION = "iki.asgi.application"
 # Application definition
 
 INSTALLED_APPS = [
@@ -53,7 +67,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'api',
+    "meals",
     'rest_framework',
     'rest_framework_simplejwt',
 ]
@@ -98,6 +114,26 @@ DATABASES = {
     }
 }
 
+db_url = os.getenv('DATABASE_URL')
+logger.debug(f"DATABASE_URL from env: {db_url}")
+
+if db_url and os.getenv("ENVIRONMENT") == "PRODUCTION":
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'postgres',
+            'USER': 'postgres',
+            'PASSWORD': 'postgres',
+            'HOST': 'db',
+            'PORT': '5432',
+        }
+    }
+    logger.debug(f"Switched to: {DATABASES['default']['ENGINE']}")
+    logger.debug(f"This is {os.getenv('ENVIRONMENT')}")
+else:
+    logger.debug("DATABASE_URL not set, using SQLite")
+    logger.debug(f"This is {os.getenv('ENVIRONMENT')}")
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -141,21 +177,17 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# REST_FRAMEWORK = {
-#     # Use Django's standard `django.contrib.auth` permissions,
-#     # or allow read-only access for unauthenticated users.
-#     'DEFAULT_PERMISSION_CLASSES': [
-#         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-#     ]
-# }
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',  # Restrict access to authenticated users only
+    ),
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # How long the access token lasts
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # How long the refresh token lasts
+    'AUTH_HEADER_TYPES': ('Bearer',),                # Header type for JWT
 }
