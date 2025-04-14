@@ -7,3 +7,4 @@ from api.models.titles import TitleSchema
 from api.models.mood import RecommendationSchema
 from api.models.meal import Meal, NutritionLanding
 from api.models.medicine import  Medicine
+from api.models.interests import Interests

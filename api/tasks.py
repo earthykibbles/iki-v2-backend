@@ -13,7 +13,7 @@ import time
 from api.models import (
     ChronicCondition, WorkoutPlanModel, Medicine, QuestionSchema,
     MindfulnessPlanModel, SymptomsSchema, TitleSchema, RecommendationSchema,
-    WorkoutLanding, MindfulnessLanding, NutritionLanding
+    WorkoutLanding, MindfulnessLanding, NutritionLanding, Interests
 )
 from meals.schemas import Nutrition
 
@@ -34,7 +34,8 @@ def generate_content_task(prompt, schema):
             "mindfulness": MindfulnessPlanModel,
             "symptoms": SymptomsSchema,
             "title": TitleSchema,
-            "mood": RecommendationSchema
+            "mood": RecommendationSchema,
+            "interests": Interests
         }
         model = schema_map.get(schema)
         if not model:
